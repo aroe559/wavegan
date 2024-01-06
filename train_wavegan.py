@@ -9,7 +9,8 @@ import os
 import time
 
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 from six.moves import xrange
 
 import loader
@@ -43,10 +44,10 @@ def train(fps, args):
   z = tf.random_uniform([args.train_batch_size, args.wavegan_latent_dim], -1., 1., dtype=tf.float32)
 
   # Make generator
-  with tf.variable_scope('G'):
+  with tf.compat.v1.variable_scope('G'):
     G_z = WaveGANGenerator(z, train=True, **args.wavegan_g_kwargs)
     if args.wavegan_genr_pp:
-      with tf.variable_scope('pp_filt'):
+      with tf.compat.v1.variable_scope('pp_filt'):
         G_z = tf.layers.conv1d(G_z, 1, args.wavegan_genr_pp_len, use_bias=False, padding='same')
   G_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='G')
 
@@ -72,7 +73,7 @@ def train(fps, args):
   tf.summary.scalar('G_z_rms', tf.reduce_mean(G_z_rms))
 
   # Make real discriminator
-  with tf.name_scope('D_x'), tf.variable_scope('D'):
+  with tf.name_scope('D_x'), tf.compat.v1.variable_scope('D'):
     D_x = WaveGANDiscriminator(x, **args.wavegan_d_kwargs)
   D_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='D')
 
@@ -89,7 +90,7 @@ def train(fps, args):
   print('-' * 80)
 
   # Make fake discriminator
-  with tf.name_scope('D_G_z'), tf.variable_scope('D', reuse=True):
+  with tf.name_scope('D_G_z'), tf.compat.v1.variable_scope('D', reuse=True):
     D_G_z = WaveGANDiscriminator(G_z, **args.wavegan_d_kwargs)
 
   # Create loss
@@ -140,7 +141,7 @@ def train(fps, args):
     alpha = tf.random_uniform(shape=[args.train_batch_size, 1, 1], minval=0., maxval=1.)
     differences = G_z - x
     interpolates = x + (alpha * differences)
-    with tf.name_scope('D_interp'), tf.variable_scope('D', reuse=True):
+    with tf.name_scope('D_interp'), tf.compat.v1.variable_scope('D', reuse=True):
       D_interp = WaveGANDiscriminator(interpolates, **args.wavegan_d_kwargs)
 
     LAMBDA = 10
@@ -249,10 +250,10 @@ def infer(args):
   flat_pad = tf.placeholder(tf.int32, [], name='flat_pad')
 
   # Execute generator
-  with tf.variable_scope('G'):
+  with tf.compat.v1.variable_scope('G'):
     G_z = WaveGANGenerator(z, train=False, **args.wavegan_g_kwargs)
     if args.wavegan_genr_pp:
-      with tf.variable_scope('pp_filt'):
+      with tf.compat.v1.variable_scope('pp_filt'):
         G_z = tf.layers.conv1d(G_z, 1, args.wavegan_genr_pp_len, use_bias=False, padding='same')
   G_z = tf.identity(G_z, name='G_z')
 
